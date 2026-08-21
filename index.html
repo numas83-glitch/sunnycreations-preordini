@@ -786,8 +786,8 @@
     </div>
   </sc-if>
 
-  <footer style="padding:var(--space-4);text-align:center;font-size:12px;" class="text-muted">
-    {{ t.footer }}
+  <footer style="padding:var(--space-6) var(--space-4);text-align:center;font-size:12px;" class="text-muted">
+    <a href="{{ privacyHref }}" target="_blank" rel="noopener">{{ t.footerPrivacy }}</a>
   </footer>
 
   <sc-if value="{{ zoomPhoto }}" hint-placeholder-val="{{ false }}">
@@ -943,7 +943,7 @@ class Component extends DCLogic {
       paidNote: 'Questo ordine risulta pagato: per cambiare qualcosa scrivici, così sistemiamo anche l\u2019importo.',
       editQty: 'Modifica quantità',
       statusToPay: 'Da pagare', statusDeclared: 'Pagamento dichiarato', statusInReview: 'in verifica', statusPaid: 'Pagamento confermato',
-      footer: 'Ordini, giacenze e prezzi sono salvati su Supabase. Il preventivo parte via email subito dopo la prenotazione.',
+      footerPrivacy: 'Informativa privacy',
       soldOutOf: 'disponibili', youAsked: 'ne hai chiesti', sizeWord: 'taglia',
       noLongerAvailable: 'non è più disponibile nella quantità richiesta.',
       someUnavailable: 'Uno degli articoli non è più disponibile nella quantità richiesta.',
@@ -989,7 +989,7 @@ class Component extends DCLogic {
       paidNote: 'This order is already paid: write to us for any change, so we can sort the amount out too.',
       editQty: 'Change quantities',
       statusToPay: 'To pay', statusDeclared: 'Payment reported', statusInReview: 'being checked', statusPaid: 'Payment confirmed',
-      footer: 'Orders, stock and prices live on Supabase. The quote is emailed right after the pre-order.',
+      footerPrivacy: 'Privacy notice',
       soldOutOf: 'available', youAsked: 'you asked for', sizeWord: 'size',
       noLongerAvailable: 'is no longer available in the quantity requested.',
       someUnavailable: 'One of the items is no longer available in the quantity requested.',
