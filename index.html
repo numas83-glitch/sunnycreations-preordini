@@ -62,10 +62,10 @@
       <header style="margin-bottom:var(--space-6);max-width:680px;display:flex;gap:var(--space-4);align-items:center;">
         <img src="assets/logo-wksf-snail.png" alt="WKSF European Championship" style="width:110px;height:auto;flex-shrink:0;">
         <div>
-          <h6 style="color:var(--color-brand-red);">WKSF European Championship</h6>
-          <h1>SunnyCreations</h1>
+          <h6 style="color:var(--color-brand-red);">Preordini ufficiali</h6>
+          <h1>{{ eventTitle }}</h1>
           <p class="text-muted">Scegli taglia e quantità per ogni articolo che ti interessa e lascia i tuoi dati. Ti mandiamo via email il preventivo con i prezzi, il listino completo e come pagare — se poi vuoi cambiare qualcosa, riapri l'ordine con il codice e modifica le quantità.</p>
-          <p class="text-muted" style="font-size:12px;">Il ricavato, tolti i costi dei materiali, va a copertura delle spese dell'evento / beneficenza.</p>
+          <p class="text-muted" style="font-size:12px;">Prodotti realizzati a mano da <strong>SunnyCreations</strong>. Il ricavato, tolti i costi dei materiali, va a copertura delle spese dell'evento / beneficenza.</p>
         </div>
       </header>
 
@@ -80,7 +80,7 @@
         <sc-for list="{{ products }}" as="product" hint-placeholder-count="4">
           <div class="card blueprint elev-sm" style="padding:var(--space-3);">
             <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-            <div style="aspect-ratio:4/3;border:1px solid var(--color-divider);overflow:hidden;cursor:zoom-in;position:relative;" onClick="{{ product.zoom }}">
+            <div style="aspect-ratio:1/1;border-radius:11px;overflow:hidden;cursor:zoom-in;position:relative;" onClick="{{ product.zoom }}">
               <img src="{{ product.photo }}" alt="{{ product.name }}" style="width:100%;height:100%;object-fit:cover;display:block;">
               <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.55);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
@@ -176,7 +176,7 @@
     </div>
 
     <sc-if value="{{ hasCartItems }}" hint-placeholder-val="{{ false }}">
-      <div style="position:fixed;left:0;right:0;bottom:0;background:var(--color-bg);border-top:1px solid var(--color-divider);padding:var(--space-3) var(--space-4);display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-lg);box-sizing:border-box;">
+      <div style="position:fixed;left:0;right:0;bottom:0;background:var(--color-surface);padding:var(--space-3) var(--space-4);display:flex;align-items:center;justify-content:space-between;box-shadow:0 -8px 28px -12px rgba(24,24,40,.35);box-sizing:border-box;">
         <div style="display:flex;align-items:center;gap:10px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-700)" stroke-width="1.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           <span>{{ cartCount }} articoli selezionati</span>
@@ -204,7 +204,7 @@
         </sc-for>
       </div>
 
-      <div style="margin-top:var(--space-8);padding:var(--space-4);border:1px solid var(--color-divider);text-align:left;">
+      <div class="card" style="margin-top:var(--space-8);padding:var(--space-6);text-align:left;">
         <h4>Cosa riceverai via email</h4>
         <ul style="margin:0;padding-left:18px;color:var(--color-text);">
           <li>Preventivo con prezzi e totale da pagare</li>
@@ -363,7 +363,7 @@
           </sc-for>
         </div>
         <table class="table no-print-on-order">
-          <thead><tr><th>Codice</th><th>Cliente</th><th>Data</th><th>Totale</th><th>Pagamento</th><th></th></tr></thead>
+          <thead><tr><th>Codice</th><th>Cliente</th><th>Data</th><th>Totale</th><th>Pagamento</th><th>Evento</th><th></th></tr></thead>
           <tbody>
             <sc-for list="{{ adminOrders }}" as="o" hint-placeholder-count="3">
               <tr>
@@ -372,6 +372,15 @@
                 <td>{{ o.dateLabel }}</td>
                 <td>€ {{ o.totalLabel }}</td>
                 <td style="{{ o.statusStyle }}">{{ o.statusLabel }}</td>
+                <td>
+                  <sc-if value="{{ hasSeveralEvents }}" hint-placeholder-val="{{ true }}">
+                    <select class="input" style="min-width:150px;font-size:13px;" value="{{ o.eventId }}" onChange="{{ o.moveTo }}">
+                      <sc-for list="{{ eventChoices }}" as="ec" hint-placeholder-count="2">
+                        <option value="{{ ec.id }}">{{ ec.label }}</option>
+                      </sc-for>
+                    </select>
+                  </sc-if>
+                </td>
                 <td style="white-space:nowrap;">
                   <button type="button" class="btn btn-ghost" onClick="{{ o.viewDetail }}">Dettagli</button>
                   <sc-if value="{{ o.isNotPaid }}" hint-placeholder-val="{{ true }}">
@@ -788,6 +797,7 @@ class Component extends DCLogic {
     } catch (e) {}
 
     await this.loadCatalogFromDb();
+    await this.loadEventsFromDb();
 
     await this.loadStockFromDb();
 
@@ -1259,6 +1269,18 @@ class Component extends DCLogic {
     this.setState(s => ({ orders: s.orders.filter(o => (o.eventId || '') !== id) }));
   }
 
+  // Capita di accorgersi tardi che l'evento corrente era quello sbagliato, o
+  // che un ordine ordinario è finito dentro una manifestazione.
+  async moveOrderToEvent(code, eventId) {
+    try {
+      const { error } = await window.__sb.from('orders').update({ event_id: eventId }).eq('code', code);
+      if (error) throw error;
+    } catch (e) {}
+    const orders = this.state.orders.map(o => o.code === code ? { ...o, eventId } : o);
+    this.saveOrders(orders);
+    this.setState({ orders });
+  }
+
   async markPaid(code) {
     const paidAt = new Date().toISOString();
     try {
@@ -1624,6 +1646,7 @@ class Component extends DCLogic {
       unlockAdmin: () => this.unlockAdmin(),
       lockAdmin: () => this.lockAdmin(),
 
+      eventTitle: (this.state.events.find(e => e.isCurrent) || {}).name || 'WKSF European Championship',
       editingCode: this.state.editingCode,
       cancelEditing: () => this.cancelEditing(),
       submitLabel: this.state.editingCode ? 'Aggiorna prenotazione' : 'Invia prenotazione',
@@ -1729,6 +1752,8 @@ class Component extends DCLogic {
             ? 'color:var(--color-brand-green);'
             : (o.paymentStatus === 'declared' ? 'color:#8a6d00;' : 'color:color-mix(in srgb, var(--color-text) 55%, transparent);'),
           isNotPaid: (o.paymentStatus || 'pending') !== 'paid',
+          eventId: o.eventId || '',
+          moveTo: (e) => this.moveOrderToEvent(o.code, e.target.value),
           viewDetail: () => this.setState({ selectedOrderCode: o.code }),
           markPaid: () => this.markPaid(o.code),
           cancel: () => this.cancelOrder(o.code),
@@ -1756,6 +1781,8 @@ class Component extends DCLogic {
       eventOptions: this.state.events
         .map(ev => ({ id: ev.id, label: ev.name + (ev.isCurrent ? ' — in corso' : '') }))
         .concat([{ id: 'tutti', label: 'Tutti gli eventi' }]),
+      eventChoices: this.state.events.map(ev => ({ id: ev.id, label: ev.name })),
+      hasSeveralEvents: this.state.events.length > 1,
       hasEvents: this.state.events.length > 0,
       eventRows: this.state.events.map(ev => ({
         id: ev.id,
