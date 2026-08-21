@@ -53,7 +53,9 @@
       SunnyCreations
     </span>
     <a href="#" onClick="{{ goToCatalog }}" aria-current="{{ catalogCurrent }}">{{ t.navBook }}</a>
-    <a href="#" onClick="{{ goToLookup }}" aria-current="{{ lookupCurrent }}">{{ t.navEdit }}</a>
+    <sc-if value="{{ isPreordini }}" hint-placeholder-val="{{ true }}">
+      <a href="#" onClick="{{ goToLookup }}" aria-current="{{ lookupCurrent }}">{{ t.navEdit }}</a>
+    </sc-if>
     <div class="seg" style="margin-left:var(--space-2);">
       <sc-for list="{{ langOptions }}" as="lo" hint-placeholder-count="2">
         <button type="button" class="seg-opt" style="{{ lo.style }}" onClick="{{ lo.select }}">{{ lo.label }}</button>
@@ -68,7 +70,12 @@
         <div>
           <h6 style="color:var(--color-brand-red);">{{ t.kicker }}</h6>
           <h1>{{ eventTitle }}</h1>
-          <p class="text-muted">{{ t.intro }}</p>
+          <sc-if value="{{ canOrder }}" hint-placeholder-val="{{ true }}">
+            <p class="text-muted">{{ t.intro }}</p>
+          </sc-if>
+          <sc-if value="{{ showcaseOnly }}" hint-placeholder-val="{{ false }}">
+            <p class="text-muted">{{ t.vetrinaIntro }}</p>
+          </sc-if>
           <p class="text-muted" style="font-size:12px;">{{ t.madeBy }} <strong>SunnyCreations</strong>. {{ t.proceeds }}</p>
         </div>
       </header>
@@ -77,6 +84,14 @@
         <div class="card" style="padding:var(--space-3);margin-bottom:var(--space-4);display:flex;align-items:center;justify-content:space-between;">
           <span>{{ t.editingOrder }} <strong>{{ editingCode }}</strong>.</span>
           <button type="button" class="btn btn-ghost" onClick="{{ cancelEditing }}">{{ t.cancelEditing }}</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ inviteMissing }}" hint-placeholder-val="{{ false }}">
+        <div class="card" style="padding:var(--space-6);margin-bottom:var(--space-6);border-left:4px solid var(--color-accent);">
+          <div class="card-title">{{ t.inviteNeededTitle }}</div>
+          <p class="card-body">{{ t.inviteNeededText }}</p>
+          <a class="btn btn-primary" style="align-self:flex-start;text-decoration:none;" href="{{ vetrinaUrl }}">{{ t.inviteGoVetrina }}</a>
         </div>
       </sc-if>
 
@@ -94,33 +109,46 @@
             <div class="card-title">{{ product.name }}</div>
             <p class="card-body">{{ product.desc }}</p>
 
-            <sc-if value="{{ product.isSized }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ showcaseOnly }}" hint-placeholder-val="{{ false }}">
               <div>
-                <label style="font-size:12px;color:var(--color-neutral-700);display:block;margin-bottom:4px;">{{ t.size }}</label>
-                <div class="seg">
-                  <sc-for list="{{ product.sizeOptions }}" as="opt" hint-placeholder-count="6">
-                    <button type="button" class="seg-opt" style="{{ opt.style }}" disabled="{{ opt.disabled }}" onClick="{{ opt.select }}">{{ opt.label }}</button>
-                  </sc-for>
+                <sc-if value="{{ product.hasSizes }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size:12px;color:var(--color-neutral-700);">{{ t.availableSizes }}: {{ product.sizesText }}</div>
+                </sc-if>
+                <div style="font-size:12px;margin-top:2px;{{ product.availabilityStyle }}">{{ product.availabilityLabel }}</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ canOrder }}" hint-placeholder-val="{{ true }}">
+              <div>
+                <sc-if value="{{ product.isSized }}" hint-placeholder-val="{{ true }}">
+                  <div>
+                    <label style="font-size:12px;color:var(--color-neutral-700);display:block;margin-bottom:4px;">{{ t.size }}</label>
+                    <div class="seg">
+                      <sc-for list="{{ product.sizeOptions }}" as="opt" hint-placeholder-count="6">
+                        <button type="button" class="seg-opt" style="{{ opt.style }}" disabled="{{ opt.disabled }}" onClick="{{ opt.select }}">{{ opt.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+                <div style="font-size:12px;margin-top:6px;{{ product.availabilityStyle }}">{{ product.availabilityLabel }}</div>
+                <sc-if value="{{ showPrices }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-weight:700;font-size:17px;">€ {{ product.priceLabel }}</div>
+                </sc-if>
+
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--space-3);">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <button type="button" class="btn btn-secondary btn-icon" onClick="{{ product.decQty }}" aria-label="{{ t.decrease }}">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14"/></svg>
+                    </button>
+                    <span style="min-width:18px;text-align:center;font-weight:600;">{{ product.sel.qty }}</span>
+                    <button type="button" class="btn btn-secondary btn-icon" onClick="{{ product.incQty }}" disabled="{{ product.cannotIncrease }}" aria-label="{{ t.increase }}">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    </button>
+                  </div>
+                  <button type="button" class="btn btn-primary" onClick="{{ product.add }}" disabled="{{ product.cannotAdd }}">{{ t.add }}</button>
                 </div>
               </div>
             </sc-if>
-            <div style="font-size:12px;margin-top:-2px;{{ product.availabilityStyle }}">{{ product.availabilityLabel }}</div>
-            <sc-if value="{{ showPrices }}" hint-placeholder-val="{{ false }}">
-              <div style="font-weight:700;font-size:17px;">€ {{ product.priceLabel }}</div>
-            </sc-if>
-
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--space-2);">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <button type="button" class="btn btn-secondary btn-icon" onClick="{{ product.decQty }}" aria-label="{{ t.decrease }}">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14"/></svg>
-                </button>
-                <span style="min-width:18px;text-align:center;font-weight:600;">{{ product.sel.qty }}</span>
-                <button type="button" class="btn btn-secondary btn-icon" onClick="{{ product.incQty }}" disabled="{{ product.cannotIncrease }}" aria-label="{{ t.increase }}">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                </button>
-              </div>
-              <button type="button" class="btn btn-primary" onClick="{{ product.add }}" disabled="{{ product.cannotAdd }}">{{ t.add }}</button>
-            </div>
           </div>
         </sc-for>
       </div>
@@ -168,7 +196,10 @@
             </div>
             <div class="field">
               <label for="cemail">{{ t.email }}</label>
-              <input id="cemail" class="input" type="email" value="{{ customer.email }}" onChange="{{ onEmail }}">
+              <input id="cemail" class="input" type="email" value="{{ customer.email }}" onChange="{{ onEmail }}" readOnly="{{ hasInvite }}">
+              <sc-if value="{{ hasInvite }}" hint-placeholder-val="{{ false }}">
+                <div class="text-muted" style="font-size:11px;margin-top:4px;">{{ t.inviteEmailNote }}</div>
+              </sc-if>
               <sc-if value="{{ errors.email }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--color-brand-red);margin-top:4px;">{{ errors.email }}</div></sc-if>
             </div>
             <div class="field">
@@ -399,6 +430,34 @@
           <button type="button" class="seg-opt" style="{{ tab.style }}" onClick="{{ tab.select }}">{{ tab.label }}</button>
         </sc-for>
       </div>
+
+      <sc-if value="{{ isTabRichieste }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h3 style="margin-top:0;">Richieste di informazioni</h3>
+          <p class="text-muted" style="margin-top:-6px;">Chi visita la vetrina non può ordinare: può solo scriverti. Accettando parte l'invito con il link al preordine, valido 14 giorni e intestato alla sua email — è la tua autorizzazione che apre la trattativa, e resta scritta.</p>
+          <table class="table">
+            <thead><tr><th>Quando</th><th>Chi</th><th>Messaggio</th><th>Stato</th><th></th></tr></thead>
+            <tbody>
+              <sc-for list="{{ inquiryRows }}" as="q" hint-placeholder-count="3">
+                <tr>
+                  <td style="white-space:nowrap;">{{ q.dateLabel }}<div class="text-muted" style="font-size:11px;">{{ q.langLabel }}</div></td>
+                  <td>{{ q.name }}<div class="text-muted" style="font-size:11px;">{{ q.email }}</div></td>
+                  <td style="max-width:280px;white-space:pre-wrap;">{{ q.message }}</td>
+                  <td style="{{ q.statusStyle }}">{{ q.statusLabel }}</td>
+                  <td style="white-space:nowrap;">
+                    <sc-if value="{{ q.isNew }}" hint-placeholder-val="{{ true }}">
+                      <span>
+                        <button type="button" class="btn btn-primary" onClick="{{ q.accept }}">Accetta e invita</button>
+                        <button type="button" class="btn btn-ghost" onClick="{{ q.reject }}">Archivia</button>
+                      </span>
+                    </sc-if>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </sc-if>
 
       <sc-if value="{{ isTabOrdini }}" hint-placeholder-val="{{ true }}">
         <div>
@@ -786,6 +845,47 @@
     </div>
   </sc-if>
 
+  <sc-if value="{{ isVetrina }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:640px;width:100%;margin:0 auto;padding:0 var(--space-4) var(--space-8);box-sizing:border-box;">
+      <sc-if value="{{ inquirySent }}" hint-placeholder-val="{{ false }}">
+        <div class="card" style="padding:var(--space-6);border-left:4px solid var(--color-brand-green);">
+          <div class="card-title">{{ t.inquirySentTitle }}</div>
+          <p class="card-body" style="margin:0;">{{ t.inquirySentText }}</p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ inquiryOpen }}" hint-placeholder-val="{{ true }}">
+        <div class="card" style="padding:var(--space-6);">
+          <h3 style="margin-top:0;">{{ t.inquiryTitle }}</h3>
+          <p class="text-muted" style="margin-top:-6px;">{{ t.inquiryIntro }}</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+            <div class="field">
+              <label for="qname">{{ t.inquiryName }}</label>
+              <input id="qname" class="input" type="text" value="{{ inquiryName }}" onChange="{{ onInquiryName }}">
+            </div>
+            <div class="field">
+              <label for="qmail">{{ t.inquiryEmail }}</label>
+              <input id="qmail" class="input" type="email" value="{{ inquiryEmailValue }}" onChange="{{ onInquiryEmail }}">
+            </div>
+          </div>
+          <div class="field">
+            <label for="qmsg">{{ t.inquiryMessage }}</label>
+            <textarea id="qmsg" class="input" value="{{ inquiryMessageValue }}" onChange="{{ onInquiryMessage }}"></textarea>
+            <div class="text-muted" style="font-size:11px;margin-top:4px;">{{ t.inquiryMessageHint }}</div>
+          </div>
+          <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.45;cursor:pointer;">
+            <input type="checkbox" checked="{{ inquiryConsent }}" onChange="{{ onInquiryConsent }}" style="margin-top:3px;width:17px;height:17px;flex:none;accent-color:var(--color-accent);">
+            <span>{{ t.privacyLabel }} <a href="{{ privacyHref }}" target="_blank" rel="noopener">{{ t.privacyLink }}</a></span>
+          </label>
+          <sc-if value="{{ inquiryError }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12px;color:var(--color-brand-red);">{{ inquiryError }}</div>
+          </sc-if>
+          <button type="button" class="btn btn-primary" style="align-self:flex-start;" onClick="{{ sendInquiry }}" disabled="{{ inquiryBusy }}">{{ inquirySendLabel }}</button>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
   <footer style="padding:var(--space-6) var(--space-4);text-align:center;font-size:12px;" class="text-muted">
     <a href="{{ privacyHref }}" target="_blank" rel="noopener">{{ t.footerPrivacy }}</a>
   </footer>
@@ -835,6 +935,16 @@ class Component extends DCLogic {
     editingEmail: null,
     payMethod: 'PayPal',
     lang: 'it',
+    // 'vetrina' su qualsiasi indirizzo, 'preordini' solo su preordini.*
+    mode: 'preordini',
+    invite: null,          // { token, email } quando si arriva da un invito valido
+    inviteChecked: false,
+    inquiry: { name: '', email: '', message: '' },
+    inquiryConsent: false,
+    inquiryBusy: false,
+    inquirySent: false,
+    inquiryError: '',
+    inquiries: [],
     consentPrivacy: false,
     consentMarketing: false,
     lookupResult: 'none',
@@ -944,6 +1054,20 @@ class Component extends DCLogic {
       editQty: 'Modifica quantità',
       statusToPay: 'Da pagare', statusDeclared: 'Pagamento dichiarato', statusInReview: 'in verifica', statusPaid: 'Pagamento confermato',
       footerPrivacy: 'Informativa privacy',
+      vetrinaIntro: "Queste sono le creazioni disponibili per l'evento: pezzi fatti a mano, in tiratura limitata. Se qualcosa ti interessa scrivimi qui sotto — ti rispondo io con disponibilità, prezzi e come fare.",
+      availableSizes: 'Taglie disponibili', oneSize: 'Taglia unica',
+      inquiryTitle: 'Ti interessa qualcosa?',
+      inquiryIntro: 'Dimmi cosa ti piace e ti rispondo personalmente. Non è un ordine: è una richiesta di informazioni, e la trattiamo io e te.',
+      inquiryName: 'Come ti chiami', inquiryEmail: 'La tua email',
+      inquiryMessage: 'Cosa ti interessa', inquiryMessageHint: 'Scrivi pure che articoli ti attirano, le taglie, o qualsiasi domanda.',
+      inquirySend: 'Invia la richiesta', inquirySending: 'Invio…',
+      inquirySentTitle: 'Richiesta ricevuta',
+      inquirySentText: 'Grazie: ti rispondo io appena possibile, all\u2019indirizzo che mi hai lasciato.',
+      inquiryFailed: 'Non sono riuscito a inviare la richiesta. Riprova fra poco.',
+      inviteNeededTitle: 'Questa pagina si apre su invito',
+      inviteNeededText: 'Il preordine si fa dal link personale che ricevi via email dopo aver chiesto informazioni. Se il tuo link è scaduto, scrivimi di nuovo e te ne mando uno nuovo.',
+      inviteGoVetrina: 'Vai alla vetrina',
+      inviteEmailNote: 'L\u2019invito è intestato a questo indirizzo.',
       soldOutOf: 'disponibili', youAsked: 'ne hai chiesti', sizeWord: 'taglia',
       noLongerAvailable: 'non è più disponibile nella quantità richiesta.',
       someUnavailable: 'Uno degli articoli non è più disponibile nella quantità richiesta.',
@@ -990,6 +1114,20 @@ class Component extends DCLogic {
       editQty: 'Change quantities',
       statusToPay: 'To pay', statusDeclared: 'Payment reported', statusInReview: 'being checked', statusPaid: 'Payment confirmed',
       footerPrivacy: 'Privacy notice',
+      vetrinaIntro: 'These are the pieces available for the event: handmade, in small numbers. If something catches your eye, write to me below — I will answer personally about availability, prices and how it works.',
+      availableSizes: 'Available sizes', oneSize: 'One size',
+      inquiryTitle: 'Interested in something?',
+      inquiryIntro: 'Tell me what you like and I will answer you personally. This is not an order: it is a request for information, handled between the two of us.',
+      inquiryName: 'Your name', inquiryEmail: 'Your email',
+      inquiryMessage: 'What are you interested in', inquiryMessageHint: 'Feel free to name the items, the sizes, or ask anything.',
+      inquirySend: 'Send request', inquirySending: 'Sending…',
+      inquirySentTitle: 'Request received',
+      inquirySentText: 'Thank you: I will get back to you as soon as I can, at the address you left.',
+      inquiryFailed: 'I could not send the request. Please try again shortly.',
+      inviteNeededTitle: 'This page opens by invitation',
+      inviteNeededText: 'Pre-orders are placed from the personal link you receive by email after asking for information. If your link has expired, write again and I will send a new one.',
+      inviteGoVetrina: 'Go to the showcase',
+      inviteEmailNote: 'The invitation is tied to this address.',
       soldOutOf: 'available', youAsked: 'you asked for', sizeWord: 'size',
       noLongerAvailable: 'is no longer available in the quantity requested.',
       someUnavailable: 'One of the items is no longer available in the quantity requested.',
@@ -1002,6 +1140,13 @@ class Component extends DCLogic {
   }
 
   async componentDidMount() {
+    // Su preordini.* si prenota, ovunque altro si guarda e basta. Un file
+    // solo per due facce: il catalogo resta in un posto, e quel che correggo
+    // lo correggo una volta.
+    try {
+      const host = String(window.location.hostname || '').toLowerCase();
+      this.setState({ mode: host.indexOf('preordini.') === 0 ? 'preordini' : 'vetrina' });
+    } catch (e) {}
     try {
       let lang = localStorage.getItem('sunnycreations_lang');
       if (lang !== 'it' && lang !== 'en') {
@@ -1042,6 +1187,11 @@ class Component extends DCLogic {
     try {
       const h = String(window.location.hash || '');
       if (/(^|[#&])admin\b/i.test(h)) this.setState({ view: 'admin' });
+
+      // L'invito arriva per email ed è la chiave che apre la prenotazione.
+      const inv = h.match(/invito=([A-Za-z0-9_\-]+)/i);
+      if (inv) await this.checkInvite(decodeURIComponent(inv[1]));
+      else this.setState({ inviteChecked: true });
       const m = h.match(/pay=([A-Za-z0-9-]+)/i);
       const e = h.match(/[?&#]e=([^&]+)/i);
       if (m) {
@@ -1051,6 +1201,70 @@ class Component extends DCLogic {
         if (email) await this.runLookup(code, email);
       }
     } catch (e) {}
+  }
+
+  async checkInvite(token) {
+    try {
+      const { data, error } = await window.__sb.rpc('check_invite', { p_token: token });
+      if (error) throw error;
+      if (data && data.length) {
+        const email = String(data[0].email || '').toLowerCase();
+        this.setState(st => ({
+          invite: { token, email },
+          inviteChecked: true,
+          customer: { ...st.customer, email },
+        }));
+        return;
+      }
+    } catch (e) {}
+    this.setState({ invite: null, inviteChecked: true });
+  }
+
+  // ── Richieste di informazioni ──────────────────────────────────────────
+  updateInquiry(field, value) {
+    this.setState(st => ({ inquiry: { ...st.inquiry, [field]: value }, inquiryError: '' }));
+  }
+  async sendInquiry() {
+    const t = this.t();
+    const { name, email, message } = this.state.inquiry;
+    if (!String(name).trim()) { this.setState({ inquiryError: t.required }); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) { this.setState({ inquiryError: t.badEmail }); return; }
+    if (!this.state.inquiryConsent) { this.setState({ inquiryError: t.privacyRequired }); return; }
+    this.setState({ inquiryBusy: true, inquiryError: '' });
+    try {
+      const { error } = await window.__sb.functions.invoke('inquiry-new', {
+        body: { name, email, message, lang: this.state.lang },
+      });
+      if (error) throw error;
+      this.setState({ inquiryBusy: false, inquirySent: true, inquiry: { name: '', email: '', message: '' }, inquiryConsent: false });
+    } catch (e) {
+      this.setState({ inquiryBusy: false, inquiryError: t.inquiryFailed });
+    }
+  }
+  async loadInquiriesFromDb() {
+    try {
+      const { data, error } = await window.__sb.from('inquiries')
+        .select('id, name, email, message, lang, status, created_at')
+        .order('created_at', { ascending: false });
+      if (error || !Array.isArray(data)) return;
+      this.setState({ inquiries: data });
+    } catch (e) {}
+  }
+  async acceptInquiry(id) {
+    try {
+      const { data, error } = await window.__sb.rpc('create_invite', { p_inquiry_id: id, p_days: 14 });
+      if (error) throw error;
+      await window.__sb.functions.invoke('invite-send', { body: { token: data } });
+      window.alert("Invito inviato: la persona riceve il link per il preordine, valido 14 giorni.");
+    } catch (e) {
+      window.alert("Non sono riuscito a mandare l'invito: " + ((e && e.message) || e));
+    }
+    await this.loadInquiriesFromDb();
+  }
+  async rejectInquiry(id) {
+    if (!window.confirm('Archiviare la richiesta senza rispondere?')) return;
+    try { await window.__sb.rpc('reject_inquiry', { p_id: id }); } catch (e) {}
+    await this.loadInquiriesFromDb();
   }
 
   async loadSettingsFromDb() {
@@ -1074,6 +1288,7 @@ class Component extends DCLogic {
   }
   async loadAdminData() {
     await this.loadMfaFactors();
+    await this.loadInquiriesFromDb();
     await this.loadSettingsFromDb();
     await this.loadEventsFromDb();
     await this.loadOrdersFromDb();
@@ -1726,6 +1941,7 @@ class Component extends DCLogic {
         const { error } = await window.__sb.rpc('place_order', {
           p_code: order.code, p_customer: order.customer, p_items: items, p_total: total,
           p_lang: this.state.lang, p_consent_marketing: !!this.state.consentMarketing,
+          p_invite: this.state.invite ? this.state.invite.token : null,
         });
         if (error) throw error;
         savedRemotely = true;
@@ -1984,6 +2200,41 @@ class Component extends DCLogic {
       lockAdmin: () => this.lockAdmin(),
 
       t: this.t(),
+      isVetrina: this.state.mode === 'vetrina',
+      isPreordini: this.state.mode === 'preordini',
+      // Si prenota solo con un invito valido in mano.
+      canOrder: this.state.mode === 'preordini' && !!this.state.invite,
+      inviteMissing: this.state.mode === 'preordini' && this.state.inviteChecked && !this.state.invite,
+      showcaseOnly: !(this.state.mode === 'preordini' && !!this.state.invite),
+      inquiryOpen: !this.state.inquirySent,
+      hasInvite: !!this.state.invite,
+      vetrinaUrl: 'https://vetrina.sunnycreations.it/',
+      inquiryName: this.state.inquiry.name,
+      inquiryEmailValue: this.state.inquiry.email,
+      inquiryMessageValue: this.state.inquiry.message,
+      onInquiryName: (e) => this.updateInquiry('name', e.target.value),
+      onInquiryEmail: (e) => this.updateInquiry('email', e.target.value),
+      onInquiryMessage: (e) => this.updateInquiry('message', e.target.value),
+      inquiryConsent: this.state.inquiryConsent,
+      onInquiryConsent: () => this.setState(st => ({ inquiryConsent: !st.inquiryConsent, inquiryError: '' })),
+      sendInquiry: () => this.sendInquiry(),
+      inquiryBusy: this.state.inquiryBusy,
+      inquirySent: this.state.inquirySent,
+      inquiryError: this.state.inquiryError,
+      inquirySendLabel: this.state.inquiryBusy ? this.t().inquirySending : this.t().inquirySend,
+      inquiryRows: this.state.inquiries.map(q => ({
+        id: q.id, name: q.name, email: q.email, message: q.message || '',
+        dateLabel: new Date(q.created_at).toLocaleString('it-IT'),
+        langLabel: q.lang === 'en' ? 'EN' : 'IT',
+        isNew: q.status === 'new',
+        statusLabel: q.status === 'accepted' ? 'Invito inviato' : (q.status === 'rejected' ? 'Archiviata' : 'Da leggere'),
+        statusStyle: q.status === 'accepted'
+          ? 'color:var(--color-brand-green);'
+          : (q.status === 'rejected' ? 'color:color-mix(in srgb, var(--color-text) 45%, transparent);' : 'color:#8a6d00;font-weight:600;'),
+        accept: () => this.acceptInquiry(q.id),
+        reject: () => this.rejectInquiry(q.id),
+      })),
+      newInquiryCount: this.state.inquiries.filter(q => q.status === 'new').length,
       langOptions: [{ id: 'it', label: 'IT' }, { id: 'en', label: 'EN' }].map(l => ({
         label: l.label,
         select: () => this.setLang(l.id),
@@ -2027,6 +2278,8 @@ class Component extends DCLogic {
             };
           }),
           priceLabel: this.money(this.getPrice(p.id)),
+          sizesText: (p.sizes && p.sizes.length) ? p.sizes.join(' · ') : '',
+          hasSizes: !!(p.sizes && p.sizes.length),
           availabilityLabel: this.availabilityLabel(p.id, sel.size),
           availabilityStyle: this.availabilityStyle(p.id, sel.size),
           cannotAdd: this.availableToAdd(p.id, sel.size) <= 0,
@@ -2113,6 +2366,7 @@ class Component extends DCLogic {
           cancel: () => this.cancelOrder(o.code),
         })),
       adminTabs: [
+        { id: 'richieste', label: 'Richieste' + (this.state.inquiries.filter(q => q.status === 'new').length ? ' (' + this.state.inquiries.filter(q => q.status === 'new').length + ')' : '') },
         { id: 'ordini', label: 'Ordini' },
         { id: 'magazzino', label: 'Magazzino' },
         { id: 'prodotti', label: 'Prodotti' },
@@ -2126,6 +2380,7 @@ class Component extends DCLogic {
           : { background: 'transparent', color: 'var(--color-text)' },
       })),
       isTabOrdini: this.state.adminTab === 'ordini',
+      isTabRichieste: this.state.adminTab === 'richieste',
       isTabMagazzino: this.state.adminTab === 'magazzino',
       isTabProdotti: this.state.adminTab === 'prodotti',
       isTabContabilita: this.state.adminTab === 'contabilita',
