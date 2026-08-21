@@ -54,7 +54,6 @@
     </span>
     <a href="#" onClick="{{ goToCatalog }}" aria-current="{{ catalogCurrent }}">Prenota</a>
     <a href="#" onClick="{{ goToLookup }}" aria-current="{{ lookupCurrent }}">Modifica un ordine</a>
-    <a href="#" onClick="{{ goToAdmin }}" aria-current="{{ adminCurrent }}">Admin (demo)</a>
   </nav>
 
   <sc-if value="{{ isCatalog }}" hint-placeholder-val="{{ true }}">
@@ -302,18 +301,37 @@
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.5" style="margin:0 auto var(--space-2);display:block;"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
       <h1>Area riservata</h1>
       <p class="text-muted">Accedi con l'account admin creato su Supabase (Authentication → Users).</p>
-      <div class="field" style="text-align:left;">
-        <label for="adminemail">Email</label>
-        <input id="adminemail" class="input" type="email" value="{{ adminEmail }}" onChange="{{ onAdminEmail }}">
-      </div>
-      <div class="field" style="text-align:left;">
-        <label for="adminpass">Password</label>
-        <input id="adminpass" class="input" type="password" value="{{ adminPassInput }}" onChange="{{ onAdminPass }}" onKeyDown="{{ onAdminPassKey }}">
-      </div>
-      <sc-if value="{{ adminPassError }}" hint-placeholder-val="{{ false }}">
-        <div style="font-size:12px;color:var(--color-brand-red);margin:4px 0;">{{ adminPassError }}</div>
+      <sc-if value="{{ mfaAskPassword }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div class="field" style="text-align:left;">
+            <label for="adminemail">Email</label>
+            <input id="adminemail" class="input" type="email" value="{{ adminEmail }}" onChange="{{ onAdminEmail }}">
+          </div>
+          <div class="field" style="text-align:left;">
+            <label for="adminpass">Password</label>
+            <input id="adminpass" class="input" type="password" value="{{ adminPassInput }}" onChange="{{ onAdminPass }}" onKeyDown="{{ onAdminPassKey }}">
+          </div>
+          <sc-if value="{{ adminPassError }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12px;color:var(--color-brand-red);margin:4px 0;">{{ adminPassError }}</div>
+          </sc-if>
+          <button type="button" class="btn btn-primary btn-block" onClick="{{ unlockAdmin }}" disabled="{{ adminBusy }}">{{ adminButtonLabel }}</button>
+        </div>
       </sc-if>
-      <button type="button" class="btn btn-primary btn-block" onClick="{{ unlockAdmin }}" disabled="{{ adminBusy }}">{{ adminButtonLabel }}</button>
+
+      <sc-if value="{{ mfaAskCode }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <p class="text-muted" style="margin-top:-4px;">Apri Google Authenticator e scrivi il codice a sei cifre che vedi accanto a SunnyCreations.</p>
+          <div class="field" style="text-align:left;">
+            <label for="mfacode">Codice</label>
+            <input id="mfacode" class="input" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" style="font-size:22px;letter-spacing:.3em;text-align:center;" value="{{ mfaCode }}" onChange="{{ onMfaCode }}" onKeyDown="{{ onMfaCodeKey }}">
+          </div>
+          <sc-if value="{{ adminPassError }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12px;color:var(--color-brand-red);margin:4px 0;">{{ adminPassError }}</div>
+          </sc-if>
+          <button type="button" class="btn btn-primary btn-block" onClick="{{ verifyMfa }}" disabled="{{ adminBusy }}">{{ mfaVerifyLabel }}</button>
+          <button type="button" class="btn btn-ghost btn-block" onClick="{{ cancelMfa }}">Annulla</button>
+        </div>
+      </sc-if>
     </div>
   </sc-if>
 
@@ -642,6 +660,44 @@
             </sc-if>
           </div>
 
+          <h3 style="margin-top:var(--space-8);">Sicurezza</h3>
+          <p class="text-muted" style="margin-top:-6px;">Con l'autenticatore acceso, per entrare qui servono la password <em>e</em> il codice a sei cifre del telefono. Questa pagina è pubblica e qui dentro ci sono nome, email e telefono di chi ha prenotato.</p>
+
+          <sc-if value="{{ mfaOn }}" hint-placeholder-val="{{ false }}">
+            <div class="card" style="flex-direction:row;align-items:center;justify-content:space-between;">
+              <span style="color:var(--color-brand-green);font-weight:600;">Autenticatore attivo</span>
+              <button type="button" class="btn btn-ghost" style="color:var(--color-brand-red);" onClick="{{ removeMfa }}">Togli</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ mfaOff }}" hint-placeholder-val="{{ true }}">
+            <div class="card" style="flex-direction:row;align-items:center;justify-content:space-between;">
+              <span class="text-muted">Non attivo: per entrare basta la password.</span>
+              <button type="button" class="btn btn-primary" onClick="{{ startMfaEnroll }}">Attiva</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ mfaEnrolling }}" hint-placeholder-val="{{ false }}">
+            <div class="card" style="padding:var(--space-6);">
+              <div class="card-title">Inquadra il codice con Google Authenticator</div>
+              <p class="card-body">Apri l'app sul telefono, premi <strong>+</strong> e scegli "Scansiona codice QR". Poi scrivi qui sotto le sei cifre che compaiono.</p>
+              <img src="{{ mfaQr }}" alt="Codice QR per l'autenticatore" style="width:200px;height:200px;background:#fff;padding:8px;border-radius:12px;">
+              <p class="text-muted" style="font-size:12px;margin:0;">Se non riesci a inquadrarlo, inserisci a mano questo codice — e conservalo, è quello che ti rimette dentro se cambi telefono:<br><code style="font-size:13px;letter-spacing:.08em;">{{ mfaSecret }}</code></p>
+              <div class="field" style="max-width:220px;">
+                <label for="mfaenroll">Codice dall'app</label>
+                <input id="mfaenroll" class="input" type="text" inputmode="numeric" placeholder="000000" style="font-size:18px;letter-spacing:.25em;text-align:center;" value="{{ mfaEnrollCode }}" onChange="{{ onMfaEnrollCode }}">
+              </div>
+              <div style="display:flex;gap:var(--space-2);">
+                <button type="button" class="btn btn-primary" onClick="{{ confirmMfaEnroll }}">Conferma</button>
+                <button type="button" class="btn btn-ghost" onClick="{{ cancelMfaEnroll }}">Annulla</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ mfaError }}" hint-placeholder-val="{{ false }}">
+            <div style="color:var(--color-brand-red);font-size:13px;">{{ mfaError }}</div>
+          </sc-if>
+
           <h3 style="margin-top:var(--space-8);">Eventi</h3>
           <p class="text-muted" style="margin-top:-6px;">Ogni ordine appartiene a un evento. Finita una manifestazione non si cancella niente: apri l'evento nuovo, e la vista si svuota da sé. L'anno dopo ritrovi tutto.</p>
 
@@ -774,6 +830,14 @@ class Component extends DCLogic {
     adminEmail: '',
     adminPassInput: '',
     adminPassError: '',
+    mfaStage: '',          // '' = email e password, 'code' = codice a sei cifre
+    mfaFactorId: '',
+    mfaChallengeId: '',
+    mfaCode: '',
+    mfaFactors: [],
+    mfaEnroll: null,       // { factorId, qr, secret } durante l'attivazione
+    mfaEnrollCode: '',
+    mfaError: '',
     adminBusy: false,
     selectedOrderCode: null,
     zoomPhoto: null,
@@ -826,14 +890,20 @@ class Component extends DCLogic {
     try {
       const { data } = await window.__sb.auth.getSession();
       if (data && data.session) {
-        this.setState({ adminUnlocked: true });
-        this.loadAdminData();
+        let needsCode = false;
+        try {
+          const { data: aal } = await window.__sb.auth.mfa.getAuthenticatorAssuranceLevel();
+          needsCode = !!aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2';
+        } catch (e) {}
+        if (needsCode) { await this.afterSignIn(); }
+        else { this.setState({ adminUnlocked: true }); this.loadAdminData(); }
       }
     } catch (e) {}
 
     // Pulsante "Ho pagato" della mail: apre la pagina su #pay=SC-XXXX
     try {
       const h = String(window.location.hash || '');
+      if (/(^|[#&])admin\b/i.test(h)) this.setState({ view: 'admin' });
       const m = h.match(/pay=([A-Za-z0-9-]+)/i);
       const e = h.match(/[?&#]e=([^&]+)/i);
       if (m) {
@@ -865,6 +935,7 @@ class Component extends DCLogic {
     } catch (e) {}
   }
   async loadAdminData() {
+    await this.loadMfaFactors();
     await this.loadSettingsFromDb();
     await this.loadEventsFromDb();
     await this.loadOrdersFromDb();
@@ -1039,15 +1110,93 @@ class Component extends DCLogic {
     try {
       const { error } = await window.__sb.auth.signInWithPassword({ email: this.state.adminEmail.trim(), password: this.state.adminPassInput });
       if (error) { this.setState({ adminPassError: 'Credenziali errate.', adminBusy: false }); return; }
-      this.setState({ adminUnlocked: true, adminBusy: false, adminPassInput: '' });
-      this.loadAdminData();
+      await this.afterSignIn();
     } catch (e) {
       this.setState({ adminPassError: 'Impossibile contattare Supabase.', adminBusy: false });
     }
   }
+  // Password giusta non basta se c'è un autenticatore: si passa al codice.
+  async afterSignIn() {
+    let totp = null;
+    try {
+      const { data } = await window.__sb.auth.mfa.listFactors();
+      totp = ((data && data.totp) || []).find(f => f.status === 'verified') || null;
+    } catch (e) {}
+    if (totp) {
+      try {
+        const { data: ch, error } = await window.__sb.auth.mfa.challenge({ factorId: totp.id });
+        if (error) throw error;
+        this.setState({ mfaStage: 'code', mfaFactorId: totp.id, mfaChallengeId: ch.id, mfaCode: '', adminBusy: false, adminPassInput: '' });
+        return;
+      } catch (e) {
+        this.setState({ adminPassError: 'Non riesco a chiedere il codice dell\'autenticatore.', adminBusy: false });
+        return;
+      }
+    }
+    this.setState({ adminUnlocked: true, adminBusy: false, adminPassInput: '', mfaStage: '' });
+    this.loadAdminData();
+  }
+  async verifyMfa() {
+    const code = String(this.state.mfaCode || '').replace(/\D/g, '');
+    if (code.length !== 6) { this.setState({ adminPassError: 'Il codice è di sei cifre.' }); return; }
+    this.setState({ adminBusy: true, adminPassError: '' });
+    try {
+      const { error } = await window.__sb.auth.mfa.verify({
+        factorId: this.state.mfaFactorId, challengeId: this.state.mfaChallengeId, code });
+      if (error) throw error;
+      this.setState({ adminUnlocked: true, adminBusy: false, mfaStage: '', mfaCode: '' });
+      this.loadAdminData();
+    } catch (e) {
+      this.setState({ adminBusy: false, adminPassError: 'Codice non valido o scaduto: aspetta quello nuovo e riprova.' });
+    }
+  }
+  cancelMfa() {
+    this.setState({ mfaStage: '', mfaCode: '', adminPassError: '' });
+    try { window.__sb.auth.signOut(); } catch (e) {}
+  }
+
+  // ── Attivazione dell'autenticatore ────────────────────────────────────
+  async loadMfaFactors() {
+    try {
+      const { data } = await window.__sb.auth.mfa.listFactors();
+      this.setState({ mfaFactors: ((data && data.totp) || []).filter(f => f.status === 'verified') });
+    } catch (e) {}
+  }
+  async startMfaEnroll() {
+    this.setState({ mfaError: '' });
+    try {
+      const { data, error } = await window.__sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'SunnyCreations' });
+      if (error) throw error;
+      this.setState({ mfaEnroll: { factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret }, mfaEnrollCode: '' });
+    } catch (e) {
+      this.setState({ mfaError: 'Non riesco ad avviare l\'attivazione: ' + ((e && e.message) || e) });
+    }
+  }
+  async confirmMfaEnroll() {
+    const en = this.state.mfaEnroll;
+    if (!en) return;
+    const code = String(this.state.mfaEnrollCode || '').replace(/\D/g, '');
+    if (code.length !== 6) { this.setState({ mfaError: 'Il codice è di sei cifre.' }); return; }
+    try {
+      const { data: ch, error: cerr } = await window.__sb.auth.mfa.challenge({ factorId: en.factorId });
+      if (cerr) throw cerr;
+      const { error } = await window.__sb.auth.mfa.verify({ factorId: en.factorId, challengeId: ch.id, code });
+      if (error) throw error;
+      this.setState({ mfaEnroll: null, mfaEnrollCode: '', mfaError: '' });
+      await this.loadMfaFactors();
+    } catch (e) {
+      this.setState({ mfaError: 'Codice non valido. Controlla di aver inquadrato il QR e riprova col codice successivo.' });
+    }
+  }
+  async removeMfa(factorId) {
+    if (!window.confirm('Togliere l\'autenticatore? Da quel momento per entrare basterà la password.')) return;
+    try { await window.__sb.auth.mfa.unenroll({ factorId }); } catch (e) {}
+    await this.loadMfaFactors();
+  }
+
   async lockAdmin() {
     try { await window.__sb.auth.signOut(); } catch (e) {}
-    this.setState({ adminUnlocked: false, view: 'catalog', selectedOrderCode: null });
+    this.setState({ adminUnlocked: false, view: 'catalog', selectedOrderCode: null, mfaStage: '', mfaCode: '', mfaEnroll: null });
   }
 
   async setStock(id, size, value) {
@@ -1663,6 +1812,26 @@ class Component extends DCLogic {
       onAdminPassKey: (e) => { if (e.key === 'Enter') this.unlockAdmin(); },
       adminPassError: this.state.adminPassError,
       adminBusy: this.state.adminBusy,
+      mfaAskPassword: this.state.mfaStage !== 'code',
+      mfaAskCode: this.state.mfaStage === 'code',
+      mfaCode: this.state.mfaCode,
+      onMfaCode: (e) => this.setState({ mfaCode: e.target.value }),
+      onMfaCodeKey: (e) => { if (e.key === 'Enter') this.verifyMfa(); },
+      verifyMfa: () => this.verifyMfa(),
+      cancelMfa: () => this.cancelMfa(),
+      mfaVerifyLabel: this.state.adminBusy ? 'Verifico…' : 'Entra',
+      mfaOn: this.state.mfaFactors.length > 0,
+      mfaOff: this.state.mfaFactors.length === 0 && !this.state.mfaEnroll,
+      mfaEnrolling: !!this.state.mfaEnroll,
+      mfaQr: this.state.mfaEnroll ? this.state.mfaEnroll.qr : '',
+      mfaSecret: this.state.mfaEnroll ? this.state.mfaEnroll.secret : '',
+      mfaEnrollCode: this.state.mfaEnrollCode,
+      onMfaEnrollCode: (e) => this.setState({ mfaEnrollCode: e.target.value }),
+      startMfaEnroll: () => this.startMfaEnroll(),
+      confirmMfaEnroll: () => this.confirmMfaEnroll(),
+      cancelMfaEnroll: () => this.setState({ mfaEnroll: null, mfaEnrollCode: '', mfaError: '' }),
+      removeMfa: () => this.removeMfa(this.state.mfaFactors[0] && this.state.mfaFactors[0].id),
+      mfaError: this.state.mfaError,
       adminButtonLabel: this.state.adminBusy ? 'Accesso in corso…' : 'Accedi',
       unlockAdmin: () => this.unlockAdmin(),
       lockAdmin: () => this.lockAdmin(),
