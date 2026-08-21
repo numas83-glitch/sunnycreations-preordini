@@ -101,6 +101,9 @@
               </div>
             </sc-if>
             <div style="font-size:12px;margin-top:-2px;{{ product.availabilityStyle }}">{{ product.availabilityLabel }}</div>
+            <sc-if value="{{ showPrices }}" hint-placeholder-val="{{ false }}">
+              <div style="font-weight:700;font-size:17px;">€ {{ product.priceLabel }}</div>
+            </sc-if>
 
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--space-2);">
               <div style="display:flex;align-items:center;gap:8px;">
@@ -127,6 +130,9 @@
                 <div>
                   <div style="font-weight:600;">{{ item.product.name }}</div>
                   <div class="text-muted" style="font-size:12px;">{{ item.sizeLabel }}</div>
+                  <sc-if value="{{ showPrices }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:13px;font-weight:600;">€ {{ item.lineTotalLabel }}</div>
+                  </sc-if>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
                   <button type="button" class="btn btn-secondary btn-icon" onClick="{{ item.dec }}" aria-label="Diminuisci">
@@ -180,6 +186,9 @@
         <div style="display:flex;align-items:center;gap:10px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-700)" stroke-width="1.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           <span>{{ cartCount }} articoli selezionati</span>
+          <sc-if value="{{ showPrices }}" hint-placeholder-val="{{ false }}">
+            <strong style="margin-left:6px;">€ {{ cartTotalLabel }}</strong>
+          </sc-if>
         </div>
       </div>
     </sc-if>
@@ -578,7 +587,18 @@
 
       <sc-if value="{{ isTabImpostazioni }}" hint-placeholder-val="{{ false }}">
         <div>
-          <h3 style="margin-top:0;">Pagamenti</h3>
+          <h3 style="margin-top:0;">Catalogo</h3>
+          <div class="field">
+            <label>Prezzi nel catalogo</label>
+            <div class="seg">
+              <sc-for list="{{ showPricesOptions }}" as="o" hint-placeholder-count="2">
+                <button type="button" class="seg-opt" style="{{ o.style }}" onClick="{{ o.select }}">{{ o.label }}</button>
+              </sc-for>
+            </div>
+            <div class="text-muted" style="font-size:11px;margin-top:6px;">Da spento la pagina resta una vetrina: si prenota senza vedere gli importi, e il prezzo arriva nel preventivo via email. Da acceso compaiono prezzo per articolo e totale del carrello.</div>
+          </div>
+
+          <h3 style="margin-top:var(--space-8);">Pagamenti</h3>
           <p class="text-muted" style="margin-top:-6px;">Questi valori finiscono nella mail di preventivo. Cambiali qui: la mail li rilegge a ogni invio, non serve toccare il codice.</p>
 
           <div class="field">
@@ -798,6 +818,7 @@ class Component extends DCLogic {
 
     await this.loadCatalogFromDb();
     await this.loadEventsFromDb();
+    await this.loadSettingsFromDb();
 
     await this.loadStockFromDb();
 
@@ -1647,6 +1668,8 @@ class Component extends DCLogic {
       lockAdmin: () => this.lockAdmin(),
 
       eventTitle: (this.state.events.find(e => e.isCurrent) || {}).name || 'WKSF European Championship',
+      showPrices: (this.state.settings.show_prices || '0') === '1',
+      cartTotalLabel: this.money(this.cartTotal()),
       editingCode: this.state.editingCode,
       cancelEditing: () => this.cancelEditing(),
       submitLabel: this.state.editingCode ? 'Aggiorna prenotazione' : 'Invia prenotazione',
@@ -1674,6 +1697,7 @@ class Component extends DCLogic {
                     : { background: 'transparent', color: 'var(--color-text)' }),
             };
           }),
+          priceLabel: this.money(this.getPrice(p.id)),
           availabilityLabel: this.availabilityLabel(p.id, sel.size),
           availabilityStyle: this.availabilityStyle(p.id, sel.size),
           cannotAdd: this.availableToAdd(p.id, sel.size) <= 0,
@@ -1685,6 +1709,7 @@ class Component extends DCLogic {
         ...e,
         sizeLabel: e.size ? `Taglia ${e.size}` : '',
         cannotIncrease: e.qty >= this.availableOf(e.product.id, e.size),
+        lineTotalLabel: this.money(e.lineTotal),
         inc: () => this.changeCartQty(e.key, 1),
         dec: () => this.changeCartQty(e.key, -1),
         remove: () => this.removeFromCart(e.key),
@@ -1802,6 +1827,16 @@ class Component extends DCLogic {
       settingIban: this.state.settings.iban || '',
       settingIbanHolder: this.state.settings.iban_holder || '',
       settingPaymentNote: this.state.settings.payment_note || '',
+      showPricesOptions: [
+        { key: '1', label: 'Sì, mostra i prezzi' },
+        { key: '0', label: 'No, solo vetrina' },
+      ].map(o => ({
+        label: o.label,
+        select: () => this.setSetting('show_prices', o.key),
+        style: (this.state.settings.show_prices || '0') === o.key
+          ? { background: 'var(--color-accent)', color: 'var(--color-bg)' }
+          : { background: 'transparent', color: 'var(--color-text)' },
+      })),
       showIbanOptions: [
         { key: '1', label: 'Sì, mostra il bonifico' },
         { key: '0', label: 'No, solo PayPal' },
