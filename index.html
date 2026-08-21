@@ -337,8 +337,19 @@
         </div>
       </div>
 
+      <sc-if value="{{ hasEvents }}" hint-placeholder-val="{{ true }}">
+        <div class="no-print-on-order field" style="max-width:360px;margin-bottom:var(--space-4);">
+          <label for="adminevent">Evento — i numeri qui sotto riguardano solo questo</label>
+          <select id="adminevent" class="input" value="{{ adminEvent }}" onChange="{{ onAdminEvent }}">
+            <sc-for list="{{ eventOptions }}" as="ev" hint-placeholder-count="2">
+              <option value="{{ ev.id }}">{{ ev.label }}</option>
+            </sc-for>
+          </select>
+        </div>
+      </sc-if>
+
       <div class="no-print-on-order seg" style="margin-bottom:var(--space-6);">
-        <sc-for list="{{ adminTabs }}" as="tab" hint-placeholder-count="4">
+        <sc-for list="{{ adminTabs }}" as="tab" hint-placeholder-count="5">
           <button type="button" class="seg-opt" style="{{ tab.style }}" onClick="{{ tab.select }}">{{ tab.label }}</button>
         </sc-for>
       </div>
@@ -556,6 +567,83 @@
         </div>
       </sc-if>
 
+      <sc-if value="{{ isTabImpostazioni }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h3 style="margin-top:0;">Pagamenti</h3>
+          <p class="text-muted" style="margin-top:-6px;">Questi valori finiscono nella mail di preventivo. Cambiali qui: la mail li rilegge a ogni invio, non serve toccare il codice.</p>
+
+          <div class="field">
+            <label for="setpaypalme">Link PayPal.Me</label>
+            <input id="setpaypalme" class="input" type="text" placeholder="https://www.paypal.me/nome" value="{{ settingPaypalMe }}" onChange="{{ onSettingPaypalMe }}">
+            <div class="text-muted" style="font-size:11px;margin-top:4px;">Lascialo vuoto per togliere dalla mail il pulsante di pagamento e il QR.</div>
+          </div>
+          <div class="field">
+            <label for="setpaypalmail">Indirizzo PayPal</label>
+            <input id="setpaypalmail" class="input" type="email" placeholder="nome@esempio.it" value="{{ settingPaypalEmail }}" onChange="{{ onSettingPaypalEmail }}">
+            <div class="text-muted" style="font-size:11px;margin-top:4px;">Serve a chi preferisce fare il pagamento a mano dall'app di PayPal.</div>
+          </div>
+          <div class="field">
+            <label for="setnote">Istruzioni per il pagamento</label>
+            <textarea id="setnote" class="input" value="{{ settingPaymentNote }}" onChange="{{ onSettingPaymentNote }}"></textarea>
+          </div>
+
+          <div class="field">
+            <label>Bonifico bancario</label>
+            <div class="seg">
+              <sc-for list="{{ showIbanOptions }}" as="o" hint-placeholder-count="2">
+                <button type="button" class="seg-opt" style="{{ o.style }}" onClick="{{ o.select }}">{{ o.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:var(--space-3);">
+            <div class="field">
+              <label for="setiban">IBAN</label>
+              <input id="setiban" class="input" type="text" placeholder="IT.." value="{{ settingIban }}" onChange="{{ onSettingIban }}">
+            </div>
+            <div class="field">
+              <label for="setibanholder">Intestatario</label>
+              <input id="setibanholder" class="input" type="text" value="{{ settingIbanHolder }}" onChange="{{ onSettingIbanHolder }}">
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <button type="button" class="btn btn-primary" onClick="{{ saveSettings }}" disabled="{{ settingsBusy }}">{{ settingsSaveLabel }}</button>
+            <sc-if value="{{ settingsMsg }}" hint-placeholder-val="{{ false }}">
+              <span class="text-muted" style="font-size:13px;">{{ settingsMsg }}</span>
+            </sc-if>
+          </div>
+
+          <h3 style="margin-top:var(--space-8);">Eventi</h3>
+          <p class="text-muted" style="margin-top:-6px;">Ogni ordine appartiene a un evento. Finita una manifestazione non si cancella niente: apri l'evento nuovo, e la vista si svuota da sé. L'anno dopo ritrovi tutto.</p>
+
+          <table class="table">
+            <thead><tr><th>Evento</th><th>Ordini</th><th></th><th></th></tr></thead>
+            <tbody>
+              <sc-for list="{{ eventRows }}" as="ev" hint-placeholder-count="2">
+                <tr>
+                  <td>{{ ev.name }} <span style="{{ ev.currentStyle }}">· {{ ev.currentLabel }}</span></td>
+                  <td>{{ ev.orderCount }}</td>
+                  <td>
+                    <sc-if value="{{ ev.canBeCurrent }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" class="btn btn-ghost" onClick="{{ ev.makeCurrent }}">Rendi corrente</button>
+                    </sc-if>
+                  </td>
+                  <td><button type="button" class="btn btn-ghost" style="color:var(--color-brand-red);" onClick="{{ ev.purge }}">Cancella ordini</button></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+
+          <div style="display:flex;gap:var(--space-2);align-items:flex-end;max-width:520px;margin-top:var(--space-3);">
+            <div class="field" style="flex:1;margin:0;">
+              <label for="newevent">Nuovo evento</label>
+              <input id="newevent" class="input" type="text" placeholder="Es. WKSF Championship 2027, oppure Lavori 2027" value="{{ newEventName }}" onChange="{{ onNewEventName }}">
+            </div>
+            <button type="button" class="btn btn-secondary" onClick="{{ createEvent }}">Crea</button>
+          </div>
+        </div>
+      </sc-if>
+
       <sc-if value="{{ isTabContabilita }}" hint-placeholder-val="{{ false }}">
         <div>
         <h3 class="no-print-on-order" style="margin-top:var(--space-6);">Contabilità — solo per te</h3>
@@ -643,6 +731,12 @@ class Component extends DCLogic {
     extraCost: 0,
     adminUnlocked: false,
     adminTab: 'ordini',
+    settings: {},
+    settingsBusy: false,
+    settingsMsg: '',
+    events: [],
+    adminEvent: '',       // '' finché non si conosce l'evento corrente, 'tutti' = nessun filtro
+    newEventName: '',
     orderFilter: 'tutti',
     productForm: null,   // null = nessuna scheda aperta
     productError: '',
@@ -702,7 +796,7 @@ class Component extends DCLogic {
       const { data } = await window.__sb.auth.getSession();
       if (data && data.session) {
         this.setState({ adminUnlocked: true });
-        this.loadOrdersFromDb();
+        this.loadAdminData();
       }
     } catch (e) {}
 
@@ -720,6 +814,30 @@ class Component extends DCLogic {
     } catch (e) {}
   }
 
+  async loadSettingsFromDb() {
+    try {
+      const { data, error } = await window.__sb.from('settings').select('key, value');
+      if (error || !Array.isArray(data)) return;
+      const settings = {};
+      data.forEach(r => { settings[r.key] = r.value || ''; });
+      this.setState({ settings });
+    } catch (e) {}
+  }
+  async loadEventsFromDb() {
+    try {
+      const { data, error } = await window.__sb.from('events')
+        .select('id, name, is_current').order('created_at', { ascending: false });
+      if (error || !Array.isArray(data) || !data.length) return;
+      const events = data.map(e => ({ id: e.id, name: e.name, isCurrent: !!e.is_current }));
+      const current = events.find(e => e.isCurrent);
+      this.setState(s => ({ events, adminEvent: s.adminEvent || (current ? current.id : 'tutti') }));
+    } catch (e) {}
+  }
+  async loadAdminData() {
+    await this.loadSettingsFromDb();
+    await this.loadEventsFromDb();
+    await this.loadOrdersFromDb();
+  }
   async loadOrdersFromDb() {
     try {
       const { data, error } = await window.__sb.from('orders').select('*').order('created_at', { ascending: false });
@@ -728,6 +846,7 @@ class Component extends DCLogic {
           .filter(o => !o.cancelled_at)
           .map(o => ({
             code: o.code, date: o.created_at, customer: o.customer, items: o.items, total: Number(o.total),
+            eventId: o.event_id || '',
             paymentStatus: o.payment_status || 'pending',
             paymentMethod: o.payment_method || null,
             paymentDeclaredAt: o.payment_declared_at || null,
@@ -890,7 +1009,7 @@ class Component extends DCLogic {
       const { error } = await window.__sb.auth.signInWithPassword({ email: this.state.adminEmail.trim(), password: this.state.adminPassInput });
       if (error) { this.setState({ adminPassError: 'Credenziali errate.', adminBusy: false }); return; }
       this.setState({ adminUnlocked: true, adminBusy: false, adminPassInput: '' });
-      this.loadOrdersFromDb();
+      this.loadAdminData();
     } catch (e) {
       this.setState({ adminPassError: 'Impossibile contattare Supabase.', adminBusy: false });
     }
@@ -1086,6 +1205,58 @@ class Component extends DCLogic {
       return;
     } catch (e) {}
     this.applyCatalogLocally({ ...p, active });
+  }
+
+  setSetting(key, value) {
+    this.setState(s => ({ settings: { ...s.settings, [key]: value }, settingsMsg: '' }));
+  }
+  async saveSettings() {
+    this.setState({ settingsBusy: true, settingsMsg: '' });
+    const rows = Object.keys(this.state.settings).map(k => ({ key: k, value: String(this.state.settings[k]) }));
+    try {
+      const { error } = await window.__sb.from('settings').upsert(rows);
+      if (error) throw error;
+      this.setState({ settingsBusy: false, settingsMsg: 'Impostazioni salvate.' });
+    } catch (e) {
+      this.setState({ settingsBusy: false, settingsMsg: 'Non salvate sul server: valgono solo su questo dispositivo.' });
+    }
+  }
+  async createEvent() {
+    const name = String(this.state.newEventName || '').trim();
+    if (!name) return;
+    const id = this.slugify(name);
+    try {
+      const { error } = await window.__sb.from('events').insert({ id, name });
+      if (error) throw error;
+      await this.loadEventsFromDb();
+    } catch (e) {
+      this.setState(s => ({ events: [{ id, name, isCurrent: false }, ...s.events] }));
+    }
+    this.setState({ newEventName: '' });
+  }
+  async makeEventCurrent(id) {
+    try {
+      const { error } = await window.__sb.rpc('set_current_event', { p_id: id });
+      if (error) throw error;
+      await this.loadEventsFromDb();
+      return;
+    } catch (e) {}
+    this.setState(s => ({ events: s.events.map(e => ({ ...e, isCurrent: e.id === id })) }));
+  }
+  // Cancellazione definitiva: due conferme, e le giacenze non si toccano —
+  // la merce di un evento chiuso è stata consegnata.
+  async purgeEvent(id) {
+    const ev = this.state.events.find(e => e.id === id);
+    if (!ev) return;
+    if (!window.confirm('Cancellare DEFINITIVAMENTE tutti gli ordini di "' + ev.name + '"?\n\nNon si torna indietro. Le giacenze non vengono toccate.')) return;
+    if (!window.confirm('Confermi? Gli ordini di questo evento spariscono per sempre.')) return;
+    try {
+      const { error } = await window.__sb.rpc('purge_event_orders', { p_id: id });
+      if (error) throw error;
+      await this.loadOrdersFromDb();
+      return;
+    } catch (e) {}
+    this.setState(s => ({ orders: s.orders.filter(o => (o.eventId || '') !== id) }));
   }
 
   async markPaid(code) {
@@ -1336,7 +1507,13 @@ class Component extends DCLogic {
     }));
     return Object.entries(map).map(([label, qty]) => ({ label, qty }));
   }
-  activeOrders() { return this.state.orders.filter(o => !o.cancelledAt); }
+  // Un ordine appartiene a un evento: filtrando qui, ordini, totali per
+  // articolo, incassi e contabilità parlano tutti dello stesso periodo.
+  activeOrders() {
+    const ev = this.state.adminEvent;
+    return this.state.orders.filter(o =>
+      !o.cancelledAt && (!ev || ev === 'tutti' || (o.eventId || '') === ev));
+  }
   adminRevenue() { return this.activeOrders().reduce((s, o) => s + o.total, 0); }
   amountToCollect() {
     return this.activeOrders().filter(o => o.paymentStatus !== 'paid').reduce((s, o) => s + o.total, 0);
@@ -1561,6 +1738,7 @@ class Component extends DCLogic {
         { id: 'magazzino', label: 'Magazzino' },
         { id: 'prodotti', label: 'Prodotti' },
         { id: 'contabilita', label: 'Contabilità' },
+        { id: 'impostazioni', label: 'Impostazioni' },
       ].map(t => ({
         label: t.label,
         select: () => this.setState({ adminTab: t.id }),
@@ -1572,6 +1750,50 @@ class Component extends DCLogic {
       isTabMagazzino: this.state.adminTab === 'magazzino',
       isTabProdotti: this.state.adminTab === 'prodotti',
       isTabContabilita: this.state.adminTab === 'contabilita',
+      isTabImpostazioni: this.state.adminTab === 'impostazioni',
+      adminEvent: this.state.adminEvent,
+      onAdminEvent: (e) => this.setState({ adminEvent: e.target.value }),
+      eventOptions: this.state.events
+        .map(ev => ({ id: ev.id, label: ev.name + (ev.isCurrent ? ' — in corso' : '') }))
+        .concat([{ id: 'tutti', label: 'Tutti gli eventi' }]),
+      hasEvents: this.state.events.length > 0,
+      eventRows: this.state.events.map(ev => ({
+        id: ev.id,
+        name: ev.name,
+        orderCount: this.state.orders.filter(o => (o.eventId || '') === ev.id && !o.cancelledAt).length,
+        currentLabel: ev.isCurrent ? 'In corso' : '',
+        currentStyle: ev.isCurrent ? 'color:var(--color-brand-green);' : 'display:none;',
+        canBeCurrent: !ev.isCurrent,
+        makeCurrent: () => this.makeEventCurrent(ev.id),
+        purge: () => this.purgeEvent(ev.id),
+      })),
+      newEventName: this.state.newEventName,
+      onNewEventName: (e) => this.setState({ newEventName: e.target.value }),
+      createEvent: () => this.createEvent(),
+      settingPaypalMe: this.state.settings.paypal_me || '',
+      settingPaypalEmail: this.state.settings.paypal_email || '',
+      settingIban: this.state.settings.iban || '',
+      settingIbanHolder: this.state.settings.iban_holder || '',
+      settingPaymentNote: this.state.settings.payment_note || '',
+      showIbanOptions: [
+        { key: '1', label: 'Sì, mostra il bonifico' },
+        { key: '0', label: 'No, solo PayPal' },
+      ].map(o => ({
+        label: o.label,
+        select: () => this.setSetting('show_iban', o.key),
+        style: (this.state.settings.show_iban || '0') === o.key
+          ? { background: 'var(--color-accent)', color: 'var(--color-bg)' }
+          : { background: 'transparent', color: 'var(--color-text)' },
+      })),
+      onSettingPaypalMe: (e) => this.setSetting('paypal_me', e.target.value),
+      onSettingPaypalEmail: (e) => this.setSetting('paypal_email', e.target.value),
+      onSettingIban: (e) => this.setSetting('iban', e.target.value),
+      onSettingIbanHolder: (e) => this.setSetting('iban_holder', e.target.value),
+      onSettingPaymentNote: (e) => this.setSetting('payment_note', e.target.value),
+      saveSettings: () => this.saveSettings(),
+      settingsBusy: this.state.settingsBusy,
+      settingsSaveLabel: this.state.settingsBusy ? 'Salvo…' : 'Salva impostazioni',
+      settingsMsg: this.state.settingsMsg,
       summaryOrderCount: this.activeOrders().length,
       summaryToCollect: this.money(this.amountToCollect()),
       summaryCollected: this.money(this.amountCollected()),
